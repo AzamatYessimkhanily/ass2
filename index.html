@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rock-Paper-Scissors</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        div {
+            margin: 20px;
+            padding: 20px;
+            border: 1px solid #ddd;
+        }
+
+        select, button {
+            margin: 10px;
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        li {
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <h1>Rock-Paper-Scissors Game</h1>
+    
+    <div>
+        <h2>Play</h2>
+        <label for="move">Select your move:</label>
+        <select id="move">
+            <option value="0">Rock</option>
+            <option value="1">Paper</option>
+            <option value="2">Scissors</option>
+        </select>
+        <button id="playButton">Play</button>
+    </div>
+    
+    <div>
+        <h2>Game History</h2>
+        <ul id="gameHistory"></ul>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.5.3/dist/web3.min.js"></script>
+    <script>
+        // Initialize Web3 and contract
+        const web3 = new Web3(Web3.givenProvider);
+        const contractAddress = '0x5B38Da6a701c568545dCfcB03FcB875f56beddC4'; // Replace with your contract address
+        const contractAbi = [
+    {
+        "constant": true,
+        "inputs": [],
+        "name": "getGameCount",
+        "outputs": [
+            {
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": false,
+        "inputs": [
+            {
+                "name": "_move",
+                "type": "uint8"
+            }
+        ],
+        "name": "play",
+        "outputs": [],
+        "payable": true,
+        "stateMutability": "payable",
+        "type": "function"
+    },
+    // ... more function descriptions ...
+];
+
+
+        const contract = new web3.eth.Contract(contractAbi, contractAddress);
+
+        // Function to handle play button click
+        document.getElementById('playButton').addEventListener('click', async () => {
+            const move = document.getElementById('move').value;
+            
+            try {
+                const accounts = await web3.eth.requestAccounts();
+                const sender = accounts[0];
+
+                // Send a transaction to the play function of the smart contract
+                await contract.methods.play(move).send({ from: sender, value: web3.utils.toWei('0.0001', 'ether') });
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        });
+
+        // Function to update game history
+        async function updateGameHistory() {
+            const gameCount = await contract.methods.getGameCount().call();
+            const gameHistory = document.getElementById('gameHistory');
+            gameHistory.innerHTML = '';
+
+            for (let i = 0; i < gameCount; i++) {
+                const game = await contract.methods.games(i).call();
+                const resultText =
+                    game.result === '0' ? 'None' :
+                    game.result === '1' ? 'Player1 Wins' :
+                    game.result === '2' ? 'Player2 Wins' : 'Draw';
+
+                const listItem = document.createElement('li');
+                listItem.textContent = `Player1: ${game.player1} | Player2: ${game.player2} | Move1: ${game.move1} | Move2: ${game.move2} | Result: ${resultText}`;
+                gameHistory.appendChild(listItem);
+            }
+        }
+
+        // Initialize and update game history
+        updateGameHistory();
+    </script>
+</body>
+</html>
